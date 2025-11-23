@@ -1,20 +1,21 @@
 <?php
 // ==============================================
-// File: pages/user/navbar.php (FINAL FIX)
-// Deskripsi: Navbar + Breadcrumb + Logout + Layout FIX
+// File: pages/user/navbar.php (FINAL FIX LOGOUT)
 // ==============================================
 
 $namauser = $_SESSION['namauser'] ?? $_SESSION['namalengkap'] ?? 'Pengguna';
 $role     = $_SESSION['role'] ?? 'User';
 $foto     = $_SESSION['foto'] ?? 'default.png';
 
-// Logout URL berdasarkan role
-$logout_url = BASE_URL . '?hal=' . ($role === 'peminjam' ? 'logoutpeminjam' : 'logoutuser');
-
+// FIX: Logout harus langsung ke file logout, bukan ke ?hal=
+$logout_url = BASE_URL . 'views/' . 
+              ($role === 'peminjam' 
+                ? 'otentikasipeminjam/logoutpeminjam.php' 
+                : 'otentikasiuser/logoutuser.php');
 
 /**
  * =====================================================
- * Fungsi Breadcrumb Otomatis
+ * Breadcrumb Otomatis
  * =====================================================
  */
 if (!function_exists('buat_breadcrumb_otomatis')) {
@@ -61,11 +62,8 @@ if (!function_exists('buat_breadcrumb_otomatis')) {
     }
 }
 
-
 /**
- * =====================================================
  * Judul Halaman Otomatis
- * =====================================================
  */
 if (!function_exists('judul_halaman_otomatis')) {
     function judul_halaman_otomatis()
@@ -80,12 +78,7 @@ if (!function_exists('judul_halaman_otomatis')) {
 }
 ?>
 
-<!-- ============================================== -->
-<!-- NAVBAR ATAS -->
-<!-- ============================================== -->
 <nav class="main-header navbar navbar-expand navbar-white navbar-light">
-
-  <!-- Menu kiri -->
   <ul class="navbar-nav">
     <li class="nav-item">
       <a class="nav-link" data-widget="pushmenu" href="#" role="button">
@@ -97,28 +90,29 @@ if (!function_exists('judul_halaman_otomatis')) {
     </li>
   </ul>
 
-  <!-- Menu kanan -->
   <ul class="navbar-nav ml-auto">
     <li class="nav-item dropdown user-menu">
       <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
         <img src="<?= BASE_URL ?>uploads/user/<?= $foto ?>"
-             class="img-circle elevation-2" style="width:30px;height:30px;object-fit:cover;">
+             class="img-circle elevation-2"
+             style="width:30px;height:30px;object-fit:cover;">
         <?= htmlspecialchars($namauser); ?> (<?= htmlspecialchars($role); ?>)
       </a>
       <ul class="dropdown-menu dropdown-menu-right">
         <li><a class="dropdown-item" href="#"><i class="fas fa-id-card mr-2"></i> Profil</a></li>
-        <li><a class="dropdown-item text-danger" href="<?= $logout_url ?>"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a></li>
+
+        <!-- FIX LOGOUT -->
+        <li>
+          <a class="dropdown-item text-danger" href="<?= $logout_url ?>">
+            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+          </a>
+        </li>
       </ul>
     </li>
   </ul>
-
 </nav>
 
-<!-- ============================================== -->
-<!-- CONTENT WRAPPER FIX -->
-<!-- ============================================== -->
 <div class="content-wrapper">
-
   <div class="content-header">
     <div class="container-fluid d-flex justify-content-between align-items-center">
       <h5 class="m-0"><?= judul_halaman_otomatis(); ?></h5>

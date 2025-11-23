@@ -2,7 +2,6 @@
 // =======================================================
 // File: index.php (root)
 // Deskripsi: Routing utama tampilan publik peminjamanalatrpl
-// Meniru pola CMSMAHDI namun disesuaikan dengan struktur proyek ini
 // =======================================================
 
 // Load config, koneksi, path
@@ -12,6 +11,33 @@ require_once INCLUDES_PATH . 'koneksi.php';
 
 // Mulai session
 session_start();
+
+// =======================================================
+// AUTO REDIRECT JIKA SUDAH LOGIN (FIX LOGOUT)
+// =======================================================
+// Perbaikan:
+// - HANYA redirect jika login === true
+// - Role saja tidak cukup, agar logout tidak kembali ke dashboard
+// =======================================================
+if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
+
+    if (isset($_SESSION['role'])) {
+        switch ($_SESSION['role']) {
+
+            case 'admin':
+                header("Location: " . BASE_URL . "dashboard.php?hal=dashboardadmin");
+                exit;
+
+            case 'petugas':
+                header("Location: " . BASE_URL . "dashboard.php?hal=dashboardpetugas");
+                exit;
+
+            case 'peminjam':
+                header("Location: " . BASE_URL . "dashboard.php?hal=dashboardpeminjam");
+                exit;
+        }
+    }
+}
 
 // Ambil parameter ?hal (default = home)
 $halaman = isset($_GET['hal']) ? trim($_GET['hal']) : 'home';
@@ -25,9 +51,6 @@ $halaman = basename(str_replace('.php', '', $halaman));
 // =======================================================
 switch ($halaman) {
 
-    // -----------------------
-    // Halaman utama publik
-    // -----------------------
     case '':
     case 'home':
         $file_view = VIEWS_PATH . 'landing/home.php';
@@ -53,10 +76,7 @@ switch ($halaman) {
         $file_view = VIEWS_PATH . 'landing/hashbycrypt.php';
         break;
 
-
-    // ====================================================
-    //        FORM LOGIN USER (dari tabel user)
-    // ====================================================
+    // LOGIN USER
     case 'loginuser':
         $file_view = VIEWS_PATH . 'otentikasiuser/loginuser.php';
         break;
@@ -69,10 +89,7 @@ switch ($halaman) {
         $file_view = VIEWS_PATH . 'otentikasiuser/logoutuser.php';
         break;
 
-
-    // ====================================================
-    //      FORM LOGIN PEMINJAM (tabel peminjam)
-    // ====================================================
+    // LOGIN PEMINJAM
     case 'loginpeminjam':
         $file_view = VIEWS_PATH . 'otentikasipeminjam/loginpeminjam.php';
         break;
@@ -93,19 +110,11 @@ switch ($halaman) {
         $file_view = VIEWS_PATH . 'otentikasipeminjam/logoutpeminjam.php';
         break;
 
-
-
-    // ====================================================
     // Komentar publik
-    // ====================================================
     case 'proseskomentar':
         $file_view = VIEWS_PATH . 'landing/proseskomentar.php';
         break;
 
-
-    // ====================================================
-    // 404 jika tidak ditemukan
-    // ====================================================
     default:
         $file_view = VIEWS_PATH . 'landing/404.php';
         break;

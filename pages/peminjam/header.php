@@ -14,6 +14,7 @@ require_once INCLUDES_PATH . 'ceksessionpeminjam.php'; // pastikan login peminja
 ?>
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,10 +28,19 @@ require_once INCLUDES_PATH . 'ceksessionpeminjam.php'; // pastikan login peminja
 
     <!-- Google Fonts -->
     <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700">
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700">
 
     <!-- Custom CSS (opsional) -->
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/dist/css/custom.css">
+
+    <!-- Tambahan CSS agar hover lebih keren -->
+    <style>
+        .navbar-nav .nav-link:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+    </style>
 </head>
+
 <body class="hold-transition layout-top-nav">
-<div class="wrapper">
+    <div class="wrapper">

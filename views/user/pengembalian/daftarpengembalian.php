@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../../includes/path.php';
 require_once INCLUDES_PATH . 'koneksi.php';
 require_once INCLUDES_PATH . 'ceksession.php';
 
-// Ambil semua peminjaman yang belum dikembalikan
+// Ambil semua transaksi peminjaman
 $sql = "SELECT pm.*, p.namapeminjam 
         FROM peminjaman pm
         LEFT JOIN peminjam p ON pm.idpeminjam = p.idpeminjam
@@ -30,6 +30,7 @@ include PAGES_PATH . 'user/sidebar.php';
                         <th>Alat</th>
                         <th>Tanggal Pinjam</th>
                         <th>Tanggal Kembali</th>
+                        <th>Foto Peminjaman</th>
                         <th>Status</th>
                         <th class="text-center">Aksi</th>
                     </tr>
@@ -37,7 +38,7 @@ include PAGES_PATH . 'user/sidebar.php';
                 <tbody>
                     <?php foreach ($peminjamans as $i => $pm): ?>
                         <?php
-                        // Ambil detail alat yang belum dikembalikan
+                        // Ambil per-alat yang belum dikembalikan
                         $detil = $koneksi->query("
                             SELECT d.*, a.namaalat 
                             FROM detilpeminjaman d
@@ -49,42 +50,73 @@ include PAGES_PATH . 'user/sidebar.php';
                         ?>
                         <tr>
                             <td><?= $i + 1 ?></td>
-                            <td><?= htmlspecialchars($pm['namapeminjam'] ?? '-') ?></td>
+                            <td><?= htmlspecialchars($pm['namapeminjam']) ?></td>
+
+                            <!-- Nama Alat -->
                             <td>
                                 <ul class="mb-0">
-                                    <?php foreach($detil as $d): ?>
-                                        <li><?= htmlspecialchars($d['namaalat'] ?? '-') ?></li>
+                                    <?php foreach ($detil as $d): ?>
+                                        <li><?= htmlspecialchars($d['namaalat']) ?></li>
                                     <?php endforeach; ?>
                                 </ul>
                             </td>
+
+                            <!-- Tanggal Pinjam -->
                             <td>
                                 <ul class="mb-0">
-                                    <?php foreach($detil as $d): ?>
-                                        <li><?= $d['tanggalpinjam'] ?? '-' ?></li>
+                                    <?php foreach ($detil as $d): ?>
+                                        <li><?= $d['tanggalpinjam'] ?></li>
                                     <?php endforeach; ?>
                                 </ul>
                             </td>
+
+                            <!-- Tanggal Kembali -->
                             <td>
                                 <ul class="mb-0">
-                                    <?php foreach($detil as $d): ?>
-                                        <li><?= $d['tanggalkembali'] ?? '-' ?></li>
+                                    <?php foreach ($detil as $d): ?>
+                                        <li><?= $d['tanggalkembali'] ?></li>
                                     <?php endforeach; ?>
                                 </ul>
                             </td>
-                            <td>
-                                <ul class="mb-0">
-                                    <?php foreach($detil as $d): ?>
-                                        <?php
-                                        $badge = ($d['keterangan'] === 'belumkembali') ? 'bg-warning' : 'bg-success';
-                                        ?>
-                                        <li><span class="badge <?= $badge ?>"><?= ucfirst($d['keterangan']) ?></span></li>
+
+                            <!-- FOTO PEMINJAMAN -->
+                            <td style="text-align:center;">
+                                <ul class="mb-0" style="list-style:none; padding-left:0;">
+                                    <?php foreach ($detil as $d): ?>
+                                        <li class="mb-1">
+                                            <?php
+                                            $foto = $d['fotopeminjaman'] ?? null;
+                                            $pathFile = BASE_PATH . "uploads/peminjaman/" . $foto;
+                                            ?>
+
+                                            <?php if (!empty($foto) && file_exists($pathFile)): ?>
+                                                <img src="<?= BASE_URL . 'uploads/peminjaman/' . $foto ?>"
+                                                    style="width:100px; height:55px; object-fit:cover; border-radius:6px;"
+                                                    alt="Foto Peminjaman">
+                                            <?php else: ?>
+                                                <span class="text-muted small">Tidak ada foto</span>
+                                            <?php endif; ?>
+                                        </li>
                                     <?php endforeach; ?>
                                 </ul>
                             </td>
+
+                            <!-- STATUS -->
+                            <td>
+                                <ul class="mb-0">
+                                    <?php foreach ($detil as $d): ?>
+                                        <li>
+                                            <span class="badge bg-warning text-dark">Belum kembali</span>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </td>
+
+                            <!-- Aksi -->
                             <td class="text-center">
-                                <a href="<?= BASE_URL ?>dashboard.php?hal=pengembalian/tambahpengembalian&idpeminjaman=<?= intval($pm['idpeminjaman']) ?>"
-                                   class="btn btn-success btn-sm">
-                                   <i class="fas fa-undo"></i> Kembalikan
+                                <a href="<?= BASE_URL ?>dashboard.php?hal=pengembalian/tambahpengembalian&idpeminjaman=<?= $pm['idpeminjaman'] ?>"
+                                    class="btn btn-success btn-sm">
+                                    <i class="fas fa-undo"></i> Kembalikan
                                 </a>
                             </td>
                         </tr>
@@ -95,10 +127,29 @@ include PAGES_PATH . 'user/sidebar.php';
     </div>
 </div>
 
+<!-- Modal Preview Gambar -->
+<div class="modal fade" id="fotoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark">
+            <div class="modal-body text-center">
+                <img id="fotoPreview" src="" class="img-fluid rounded">
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-$(document).ready(function () {
-    $('#datatable').DataTable();
-});
+    document.addEventListener("DOMContentLoaded", () => {
+        $('#datatable').DataTable();
+
+        const fotoPreview = document.getElementById("fotoPreview");
+        const fotoModal = document.getElementById("fotoModal");
+
+        fotoModal.addEventListener("show.bs.modal", function(event) {
+            let trigger = event.relatedTarget;
+            fotoPreview.src = trigger.getAttribute("data-foto");
+        });
+    });
 </script>
 
 <?php include PAGES_PATH . 'user/footer.php'; ?>

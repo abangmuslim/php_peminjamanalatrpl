@@ -68,7 +68,7 @@ function renderKomentar($koneksi, $idalat, $idparent = null, $level = 0) {
             </p>
             <p><?= nl2br(htmlspecialchars($alat['deskripsi'] ?? 'Deskripsi belum tersedia')) ?></p>
             <hr>
-            <a href="?hal=login" class="btn btn-success btn-lg">Login untuk Meminjam</a>
+            <a href="<?= BASE_URL ?>?hal=loginpeminjam" class="btn btn-success btn-lg">Login untuk Meminjam</a>
         </div>
     </div>
 

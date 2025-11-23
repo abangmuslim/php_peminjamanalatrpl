@@ -121,6 +121,7 @@ PEMINJAMANALATRPL/
 │  ├─ peminjam/                 ← alat dashboard untuk user login (extend dari pages/user atau pages/peminjam)
 │  │  ├─ dashboardpeminjam.php              
 │  │  ├─ tambahpeminjaman.php              
+│  │  ├─ riwayatpeminjaman.php              
 │  │  └─ prosespeminjaman.php        
 │  │
 │  ├─ notfound.php           ← halaman notfound untuk akun peminjam dan user (admin dan petugas) yang sudah login
@@ -146,14 +147,12 @@ PEMINJAMANALATRPL/
 │  └─ htaccess/                 ← file keamanan .htaccess untuk referensi
 │
 │
-├─ database/
-│  └─ cmsmahdi.sql              ← file dump struktur database (opsional)
-│
 ├─ uploads/                     ← penyimpanan file publik (gambar user & alat)
 │  ├─ user/                     ← foto profil user
 │  ├─ peminjam/                 ← foto profil peminjam
 │  ├─ alat/                     ← gambar alat
 │  ├─ peminjaman/               ← gambar peminjaman
+│  ├─ pengembalian/             ← gambar peminjaman
 │  ├─ komentar/                 ← gambar dari komentar (opsional)
 │  └─ .htaccess                 ← keamanan: blok eksekusi file PHP
 │

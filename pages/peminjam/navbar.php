@@ -1,43 +1,51 @@
 <?php
-// ==============================================
-// File: pages/peminjam/navbar.php
-// Deskripsi: Navbar + Breadcrumb otomatis + Logout Peminjam
-// ==============================================
+// ===============================================================
+// File: pages/peminjam/navbar.php (FINAL FIXED)
+// ===============================================================
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once __DIR__ . '/../../includes/path.php';
+
+// Data session
 $namapeminjam = $_SESSION['namapeminjam'] ?? 'Peminjam';
 $foto         = $_SESSION['foto'] ?? 'default.png';
 
-// Logout URL untuk peminjam
-$logout_url = BASE_URL . '?hal=logoutpeminjam';
+// URL Logout
+$logout_url = BASE_URL . "dashboard.php?hal=logoutpeminjam";
 
-/**
- * =====================================================
- * Fungsi otomatis membentuk breadcrumb
- * =====================================================
- */
-if (!function_exists('buat_breadcrumb_otomatis')) {
-    function buat_breadcrumb_otomatis()
+/* ===============================================================
+   Breadcrumb Otomatis
+================================================================ */
+if (!function_exists('breadcrumb_peminjam')) {
+    function breadcrumb_peminjam()
     {
         $hal = $_GET['hal'] ?? 'dashboardpeminjam';
 
-        // Dashboard utama
         if ($hal === 'dashboardpeminjam') {
-            echo '<ol class="breadcrumb float-sm-right"><li class="breadcrumb-item active">Dashboard</li></ol>';
+            echo '<ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item active">Dashboard</li>
+                  </ol>';
             return;
         }
 
         $parts = explode('/', $hal);
         $breadcrumb = [];
 
-        // Tambahkan Dashboard sebagai awal
-        $breadcrumb[] = '<li class="breadcrumb-item"><a href="' . BASE_URL . '?hal=dashboardpeminjam">Dashboard</a></li>';
+        // Dashboard selalu ada
+        $breadcrumb[] = '<li class="breadcrumb-item">
+                            <a href="' . BASE_URL . 'dashboard.php?hal=dashboardpeminjam">Dashboard</a>
+                         </li>';
 
-        // Fallback menu otomatis (opsional)
+        // Segment lainnya
         for ($i = 0; $i < count($parts); $i++) {
-            $segment = htmlspecialchars(ucfirst(str_replace(['_', '-'], ' ', $parts[$i])));
+            $segment = ucwords(str_replace(['_', '-'], ' ', $parts[$i]));
+
             if ($i < count($parts) - 1) {
-                $suburl = BASE_URL . '?hal=' . implode('/', array_slice($parts, 0, $i + 1));
-                $breadcrumb[] = '<li class="breadcrumb-item"><a href="' . $suburl . '">' . $segment . '</a></li>';
+                $sub = BASE_URL . 'dashboard.php?hal=' . implode('/', array_slice($parts, 0, $i + 1));
+                $breadcrumb[] = '<li class="breadcrumb-item"><a href="' . $sub . '">' . $segment . '</a></li>';
             } else {
                 $breadcrumb[] = '<li class="breadcrumb-item active">' . $segment . '</li>';
             }
@@ -47,57 +55,96 @@ if (!function_exists('buat_breadcrumb_otomatis')) {
     }
 }
 
-/**
- * =====================================================
- * Fungsi otomatis membuat judul halaman
- * =====================================================
- */
-if (!function_exists('judul_halaman_otomatis')) {
-    function judul_halaman_otomatis()
+/* ===============================================================
+   Judul Halaman Otomatis
+================================================================ */
+if (!function_exists('judul_peminjam')) {
+    function judul_peminjam()
     {
         $hal = $_GET['hal'] ?? 'dashboardpeminjam';
         if ($hal === 'dashboardpeminjam') return 'Dashboard';
+
         $parts = explode('/', $hal);
-        return ucfirst(str_replace(['_', '-'], ' ', end($parts)));
+        return ucwords(str_replace(['_', '-'], ' ', end($parts)));
     }
 }
 ?>
 
-<!-- ============================================== -->
-<!-- NAVBAR ATAS DASHBOARD PEMINJAM -->
-<!-- ============================================== -->
+<!-- =============================================================== -->
+<!-- NAVBAR -->
+<!-- =============================================================== -->
 <nav class="main-header navbar navbar-expand navbar-white navbar-light">
 
-  <!-- Kiri: home -->
-  <ul class="navbar-nav">
-    <li class="nav-item d-none d-sm-inline-block">
-      <a href="<?= BASE_URL ?>?hal=dashboardpeminjam" class="nav-link">Beranda</a>
-    </li>
-  </ul>
+    <!-- Left Menu (Modern & Keren, Rapi) -->
+    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
-  <!-- Kanan: user menu -->
-  <ul class="navbar-nav ml-auto">
-    <li class="nav-item dropdown user-menu">
-      <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
-        <img src="<?= BASE_URL ?>uploads/peminjam/<?= $foto ?>"
-             class="img-circle elevation-2" style="width:30px;height:30px;object-fit:cover;">
-        <?= htmlspecialchars($namapeminjam); ?> (Peminjam)
-      </a>
-      <ul class="dropdown-menu dropdown-menu-right">
-        <li><a class="dropdown-item" href="#"><i class="fas fa-id-card mr-2"></i> Profil</a></li>
-        <li><a class="dropdown-item text-danger" href="<?= $logout_url ?>"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a></li>
-      </ul>
-    </li>
-  </ul>
+        <li class="nav-item d-none d-sm-inline-block mt-2">
+            <a href="<?= BASE_URL ?>dashboard.php?hal=dashboardpeminjam"
+                class="nav-link d-flex align-items-center px-3 py-2 rounded text-white"
+                style="background: linear-gradient(90deg, #4e54c8, #8f94fb); transition: 0.3s;">
+                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+            </a>
+        </li>
+
+        <li class="nav-item d-none d-sm-inline-block mt-2">
+            <a href="<?= BASE_URL ?>dashboard.php?hal=peminjam/riwayatpeminjaman"
+                class="nav-link d-flex align-items-center px-3 py-2 rounded text-white"
+                style="background: linear-gradient(90deg, #ff416c, #ff4b2b); transition: 0.3s;">
+                <i class="fas fa-history me-2"></i> Riwayat Peminjaman
+            </a>
+        </li>
+
+        <li class="nav-item d-none d-sm-inline-block mt-2">
+            <a href="<?= BASE_URL ?>dashboard.php?hal=peminjam/tambahpeminjaman"
+                class="nav-link d-flex align-items-center px-3 py-2 rounded text-white"
+                style="background: linear-gradient(90deg, #00c6ff, #0072ff); transition: 0.3s;">
+                <i class="fas fa-plus-circle me-2"></i> Tambah Peminjaman
+            </a>
+        </li>
+
+    </ul>
+
+
+    <!-- Right User Menu -->
+    <ul class="navbar-nav ml-auto">
+        <li class="nav-item dropdown user-menu">
+
+            <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
+                <img src="<?= BASE_URL ?>uploads/peminjam/<?= htmlspecialchars($foto) ?>"
+                    class="img-circle elevation-2"
+                    style="width:30px;height:30px;object-fit:cover;">
+                <?= htmlspecialchars($namapeminjam); ?> (Peminjam)
+            </a>
+
+            <ul class="dropdown-menu dropdown-menu-right">
+
+                <!-- Profil (future feature) -->
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fas fa-id-card mr-2"></i> Profil
+                    </a>
+                </li>
+
+                <!-- Logout -->
+                <li>
+                    <a class="dropdown-item text-danger" href="<?= $logout_url ?>">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                    </a>
+                </li>
+
+            </ul>
+
+        </li>
+    </ul>
 
 </nav>
 
-<!-- ============================================== -->
-<!-- HEADER + BREADCRUMB OTOMATIS -->
-<!-- ============================================== -->
-<div class="content-header">
-  <div class="container-fluid d-flex justify-content-between align-items-center">
-    <h5 class="m-0"><?= judul_halaman_otomatis(); ?></h5>
-    <?php buat_breadcrumb_otomatis(); ?>
-  </div>
+<!-- =============================================================== -->
+<!-- HEADER + BREADCRUMB -->
+<!-- =============================================================== -->
+<div class="content-header bg-warning">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <h5 class="m-0"><?= judul_peminjam(); ?></h5>
+        <?php breadcrumb_peminjam(); ?>
+    </div>
 </div>

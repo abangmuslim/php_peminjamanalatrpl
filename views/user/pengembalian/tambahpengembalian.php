@@ -1,7 +1,7 @@
 <?php
 // ============================================================
 // File: views/user/pengembalian/tambahpengembalian.php
-// Final — tampil rapi (mirip pengembalian buku perpustakaan)
+// FINAL — lengkap + foto pengembalian
 // ============================================================
 require_once __DIR__ . '/../../../includes/path.php';
 require_once INCLUDES_PATH . 'koneksi.php';
@@ -21,7 +21,7 @@ $sql = "
     SELECT p.*, pm.namapeminjam
     FROM peminjaman p
     JOIN peminjam pm ON p.idpeminjam = pm.idpeminjam
-    WHERE p.idpeminjaman = " . $idpeminjaman . " 
+    WHERE p.idpeminjaman = $idpeminjaman
     LIMIT 1
 ";
 $res = $koneksi->query($sql);
@@ -40,7 +40,7 @@ $qDetil = $koneksi->query("
     ORDER BY d.iddetilpeminjaman ASC
 ");
 
-// Tarif denda per hari
+// Tarif denda
 $tarifDenda = 1000;
 
 include PAGES_PATH . 'user/header.php';
@@ -49,7 +49,6 @@ include PAGES_PATH . 'user/sidebar.php';
 ?>
 
 <style>
-/* sedikit styling agar rapi seperti tampilan perpustakaan */
 .badge-small { padding: .35rem .5rem; font-size: .85rem; }
 .summary-card { padding: 18px; border-radius: 8px; color: #fff; }
 .summary-title { font-size: .9rem; opacity: .9; }
@@ -64,7 +63,9 @@ include PAGES_PATH . 'user/sidebar.php';
     </div>
 
     <div class="card-body">
-      <form method="POST" action="<?= BASE_URL ?>dashboard.php?hal=pengembalian/prosespengembalian">
+      <form method="POST" enctype="multipart/form-data"
+            action="<?= BASE_URL ?>dashboard.php?hal=pengembalian/prosespengembalian">
+
         <input type="hidden" name="idpeminjaman" value="<?= $idpeminjaman ?>">
         <input type="hidden" name="tanggalbayar" id="tanggalbayar" value="<?= date('Y-m-d') ?>">
 
@@ -72,46 +73,44 @@ include PAGES_PATH . 'user/sidebar.php';
           <table class="table table-bordered table-striped table-fixed w-100">
             <thead class="bg-light text-center">
               <tr>
-                <th style="width:50px">No</th>
+                <th>No</th>
                 <th>Nama Alat</th>
-                <th style="width:120px">Tanggal Pinjam</th>
-                <th style="width:90px">Durasi</th>
-                <th style="width:140px">Harus Kembali</th>
-                <th style="width:160px">Tanggal Dikembalikan</th>
-                <th style="width:110px">Status</th>
-                <th style="width:120px">Keterangan</th>
-                <th style="width:110px">Terlambat (hari)</th>
-                <th style="width:140px">Denda</th>
+                <th>Tanggal Pinjam</th>
+                <th>Durasi</th>
+                <th>Harus Kembali</th>
+                <th>Tanggal Dikembalikan</th>
+                <th>Status</th>
+                <th>Keterangan</th>
+                <th>Terlambat</th>
+                <th>Denda</th>
+                <th style="width:160px">Foto Pengembalian</th>
               </tr>
             </thead>
             <tbody>
+
 <?php
 $no = 1;
 $rows_exist = false;
+
 while ($d = $qDetil->fetch_assoc()):
     $rows_exist = true;
-    // safe values
     $iddetil = (int)$d['iddetilpeminjaman'];
     $namaalat = $d['namaalat'] ?? '-';
-    $tanggalpinjam = $d['tanggalpinjam'] ?? '';
-    $tanggalkembali = $d['tanggalkembali'] ?? '';
-    $durasipeminjaman = (int)$d['durasipeminjaman'];
-    // default tanggal dikembalikan = today
     $tglToday = date('Y-m-d');
 ?>
               <tr data-iddetil="<?= $iddetil ?>">
                 <td class="text-center"><?= $no++ ?></td>
                 <td><?= htmlspecialchars($namaalat) ?></td>
-                <td class="text-center"><?= $tanggalpinjam ?></td>
-                <td class="text-center"><?= $durasipeminjaman ?> hari</td>
-                <td class="text-center tgl-kembali-asli"><?= $tanggalkembali ?></td>
+                <td class="text-center"><?= $d['tanggalpinjam'] ?></td>
+                <td class="text-center"><?= $d['durasipeminjaman'] ?> hari</td>
+                <td class="text-center tgl-kembali-asli"><?= $d['tanggalkembali'] ?></td>
 
-                <!-- tanggal dikembalikan (input) -->
                 <td class="text-center">
                   <?php if ($d['keterangan'] === 'sudahkembali'): ?>
                     <input type="date" class="form-control" value="<?= $d['tanggaldikembalikan'] ?>" readonly>
                   <?php else: ?>
-                    <input type="date" name="tgl_kembali[<?= $iddetil ?>]" class="form-control tgl-kembali" value="<?= $tglToday ?>">
+                    <input type="date" name="tgl_kembali[<?= $iddetil ?>]"
+                           class="form-control tgl-kembali" value="<?= $tglToday ?>">
                   <?php endif; ?>
                 </td>
 
@@ -130,11 +129,23 @@ while ($d = $qDetil->fetch_assoc()):
                 <td class="text-center hari-terlambat">0</td>
                 <td class="text-center denda">Rp0</td>
 
-                <!-- hidden fields sesuai prosespengembalian.php -->
+                <!-- hidden untuk prosespengembalian -->
                 <input type="hidden" name="detail[<?= $iddetil ?>][jumlahharitelat]" class="input-terlambat">
                 <input type="hidden" name="detail[<?= $iddetil ?>][denda]" class="input-denda">
                 <input type="hidden" name="detail[<?= $iddetil ?>][status]" class="input-status">
+
+                <!-- FOTO PENGEMBALIAN -->
+                <td class="text-center">
+                  <?php if ($d['keterangan'] === 'sudahkembali'): ?>
+                      <span class="badge bg-success">Sudah ada</span>
+                  <?php else: ?>
+                      <input type="file" class="form-control"
+                             name="fotopengembalian[<?= $iddetil ?>]"
+                             accept="image/*" required>
+                  <?php endif; ?>
+                </td>
               </tr>
+
 <?php endwhile; ?>
 
             </tbody>
@@ -145,7 +156,7 @@ while ($d = $qDetil->fetch_assoc()):
           <div class="alert alert-info">Tidak ada detail peminjaman untuk ID ini.</div>
         <?php endif; ?>
 
-        <!-- Ringkasan & aksi -->
+        <!-- RINGKASAN -->
         <div class="row mt-4 align-items-center text-center">
           <div class="col-md-3 mb-3">
             <div class="summary-card bg-info">
@@ -157,7 +168,8 @@ while ($d = $qDetil->fetch_assoc()):
 
           <div class="col-md-3 mb-3">
             <label class="fw-bold d-block">Dibayar</label>
-            <input type="number" name="dibayar" id="uang-bayar" class="form-control text-center form-control-lg" value="0" min="0">
+            <input type="number" name="dibayar" id="uang-bayar"
+                   class="form-control text-center form-control-lg" value="0" min="0">
             <div class="mt-2"><span id="badge-bayar" class="badge bg-warning text-dark">Rp0</span></div>
           </div>
 
@@ -190,7 +202,9 @@ while ($d = $qDetil->fetch_assoc()):
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const rows = Array.from(document.querySelectorAll('tbody tr[data-iddetil]'));
+    const rows = [...document.querySelectorAll('tbody tr[data-iddetil]')];
+    const tarif = <?= intval($tarifDenda) ?>;
+
     const totalDendaEl = document.getElementById('total-denda');
     const inputTotalDenda = document.getElementById('input-total-denda');
     const inputTunggakan = document.getElementById('input-tunggakan');
@@ -199,82 +213,64 @@ document.addEventListener('DOMContentLoaded', () => {
     const tunggakanEl = document.getElementById('tunggakan');
     const badgeBayar = document.getElementById('badge-bayar');
 
-    const tarif = <?= intval($tarifDenda) ?? 1000 ?>;
+    const formatRupiah = num =>
+        'Rp' + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-    const formatRupiah = num => 'Rp' + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-
-    function toDateYMD(s) {
-        // expects 'YYYY-MM-DD'
-        return new Date(s + 'T00:00:00');
-    }
+    const toDateYMD = s => new Date(s + 'T00:00:00');
 
     function hitungDenda() {
         let totalDenda = 0;
 
         rows.forEach(row => {
-            const iddetil = row.getAttribute('data-iddetil');
-            const tglKembaliAsliEl = row.querySelector('.tgl-kembali-asli');
+            const asli = row.querySelector('.tgl-kembali-asli').textContent.trim();
             const inputTgl = row.querySelector('.tgl-kembali');
-            const statusEl = row.querySelector('.status');
-            const hariTerlambatEl = row.querySelector('.hari-terlambat');
-            const dendaEl = row.querySelector('.denda');
-            const inputTerlambat = row.querySelector('.input-terlambat');
-            const inputDenda = row.querySelector('.input-denda');
-            const inputStatus = row.querySelector('.input-status');
-
-            if (!tglKembaliAsliEl) return;
-
-            const asli = tglKembaliAsliEl.textContent.trim();
-            // if no input (already returned), skip calculation
             if (!inputTgl) return;
 
-            // parse dates
-            const tanggalKembaliAsli = toDateYMD(asli);
-            const tanggalDikembalikan = toDateYMD(inputTgl.value);
+            const asal = toDateYMD(asli);
+            const dikembali = toDateYMD(inputTgl.value);
 
-            // difference in days
-            const msPerDay = 1000 * 60 * 60 * 24;
-            const diff = Math.floor((tanggalDikembalikan - tanggalKembaliAsli) / msPerDay);
-            const selisihHari = Math.max(0, diff);
-            const denda = selisihHari * tarif;
+            const selisih = Math.max(0,
+                Math.floor((dikembali - asal) / (1000*60*60*24))
+            );
 
-            // update UI
-            statusEl.innerHTML = selisihHari > 0
+            const denda = selisih * tarif;
+
+            row.querySelector('.hari-terlambat').textContent = selisih;
+            row.querySelector('.denda').textContent = formatRupiah(denda);
+
+            row.querySelector('.input-terlambat').value = selisih;
+            row.querySelector('.input-denda').value = denda;
+            row.querySelector('.input-status').value = selisih > 0 ? 'terlambat' : 'tidakterlambat';
+
+            row.querySelector('.status').innerHTML =
+                selisih > 0
                 ? '<span class="badge bg-danger badge-small">Terlambat</span>'
                 : '<span class="badge bg-success badge-small">Tepat Waktu</span>';
-
-            hariTerlambatEl.textContent = selisihHari;
-            dendaEl.textContent = formatRupiah(denda);
-
-            inputTerlambat.value = selisihHari;
-            inputDenda.value = denda;
-            inputStatus.value = selisihHari > 0 ? 'terlambat' : 'tidakterlambat';
 
             totalDenda += denda;
         });
 
-        const dibayar = parseInt(uangBayarEl.value, 10) || 0;
-        const tunggakan = Math.max(totalDenda - dibayar, 0);
-        const kembalian = Math.max(dibayar - totalDenda, 0);
-
-        inputTotalDenda.value = totalDenda;
-        inputTunggakan.value = tunggakan;
+        const bayar = parseInt(uangBayarEl.value) || 0;
+        const tungg = Math.max(totalDenda - bayar, 0);
+        const kembali = Math.max(bayar - totalDenda, 0);
 
         totalDendaEl.textContent = formatRupiah(totalDenda);
-        tunggakanEl.textContent = formatRupiah(tunggakan);
-        kembalianEl.textContent = formatRupiah(kembalian);
-        badgeBayar.textContent = formatRupiah(dibayar);
+        inputTotalDenda.value = totalDenda;
+
+        tunggakanEl.textContent = formatRupiah(tungg);
+        inputTunggakan.value = tungg;
+
+        kembalianEl.textContent = formatRupiah(kembali);
+        badgeBayar.textContent = formatRupiah(bayar);
     }
 
-    // attach change listeners to each date input
-    rows.forEach(row => {
-        const input = row.querySelector('.tgl-kembali');
+    rows.forEach(r => {
+        const input = r.querySelector('.tgl-kembali');
         if (input) input.addEventListener('change', hitungDenda);
     });
 
     uangBayarEl.addEventListener('input', hitungDenda);
 
-    // initial calculation on load
     hitungDenda();
 });
 </script>

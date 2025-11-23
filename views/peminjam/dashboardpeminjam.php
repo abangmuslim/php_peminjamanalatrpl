@@ -1,6 +1,6 @@
 <?php
 // ============================================================
-// Dashboard peminjam (plug-and-play)
+// Dashboard Peminjam – FINAL versi sesuai desain
 // ============================================================
 
 require_once __DIR__ . '/../../includes/path.php';
@@ -27,12 +27,12 @@ $peminjam = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
 // ===============================
-// Statistik peminjaman
+// Hitung statistik
 // ===============================
-$stmt1 = $koneksi->prepare("SELECT COUNT(*) AS totalpinjam FROM peminjaman WHERE idpeminjam = ?");
+$stmt1 = $koneksi->prepare("SELECT COUNT(*) AS total FROM peminjaman WHERE idpeminjam = ?");
 $stmt1->bind_param("i", $idpeminjam);
 $stmt1->execute();
-$totalPinjam = $stmt1->get_result()->fetch_assoc()['totalpinjam'] ?? 0;
+$totalPinjam = $stmt1->get_result()->fetch_assoc()['total'] ?? 0;
 $stmt1->close();
 
 $stmt2 = $koneksi->prepare("
@@ -47,10 +47,10 @@ $belumKembali = $stmt2->get_result()->fetch_assoc()['belumkembali'] ?? 0;
 $stmt2->close();
 
 // ===============================
-// 5 peminjaman terbaru
+// Riwayat 5 terbaru
 // ===============================
 $stmt3 = $koneksi->prepare("
-    SELECT p.idpeminjaman, dp.tanggalpinjam, dp.tanggalkembali, dp.keterangan, a.namaalat
+    SELECT a.namaalat, dp.tanggalpinjam, dp.keterangan
     FROM peminjaman p
     JOIN detilpeminjaman dp ON dp.idpeminjaman = p.idpeminjaman
     JOIN alat a ON a.idalat = dp.idalat
@@ -60,22 +60,37 @@ $stmt3 = $koneksi->prepare("
 ");
 $stmt3->bind_param("i", $idpeminjam);
 $stmt3->execute();
-$latestPinjam = $stmt3->get_result();
+$riwayat = $stmt3->get_result();
 $stmt3->close();
 
 // ===============================
-// Include layout
+// Pinjaman yang belum kembali (5 terbaru)
 // ===============================
+$stmt4 = $koneksi->prepare("
+    SELECT a.namaalat, dp.tanggalpinjam
+    FROM peminjaman p
+    JOIN detilpeminjaman dp ON dp.idpeminjaman = p.idpeminjaman
+    JOIN alat a ON a.idalat = dp.idalat
+    WHERE p.idpeminjam = ? AND dp.keterangan='belumkembali'
+    ORDER BY dp.tanggalpinjam DESC
+    LIMIT 5
+");
+$stmt4->bind_param("i", $idpeminjam);
+$stmt4->execute();
+$belumKembaliList = $stmt4->get_result();
+$stmt4->close();
+
 include PAGES_PATH . 'peminjam/header.php';
 include PAGES_PATH . 'peminjam/navbar.php';
 ?>
 
 <div class="container mt-4">
+
     <h2>Selamat Datang, <?= htmlspecialchars($peminjam['namapeminjam']) ?>!</h2>
-    <p>Status akun: <strong><?= htmlspecialchars($peminjam['status'] ?? '-') ?></strong></p>
+    <p>Status akun: <strong><?= htmlspecialchars($peminjam['status']) ?></strong></p>
 
     <div class="row mt-3">
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h5>Total Peminjaman</h5>
@@ -83,7 +98,8 @@ include PAGES_PATH . 'peminjam/navbar.php';
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+
+        <div class="col-md-6">
             <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h5>Alat Belum Dikembalikan</h5>
@@ -91,49 +107,77 @@ include PAGES_PATH . 'peminjam/navbar.php';
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card text-center shadow-sm">
-                <div class="card-body">
-                    <h5>Tambah Peminjaman</h5>
-                    <a href="<?= BASE_URL ?>dashboard.php?hal=peminjam/tambahpeminjaman" class="btn btn-success mt-2">+ Peminjaman Baru</a>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <h4>Peminjaman Terbaru</h4>
-            <div class="table-responsive">
-                <table class="table table-striped table-bordered">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Nama Alat</th>
-                            <th>Tanggal Pinjam</th>
-                            <th>Tanggal Kembali</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if ($latestPinjam && $latestPinjam->num_rows > 0): ?>
-                            <?php $no=1; while($row = $latestPinjam->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?= $no++ ?></td>
-                                    <td><?= htmlspecialchars($row['namaalat']) ?></td>
-                                    <td><?= htmlspecialchars($row['tanggalpinjam']) ?></td>
-                                    <td><?= htmlspecialchars($row['tanggalkembali']) ?></td>
-                                    <td><?= htmlspecialchars($row['keterangan']) ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr><td colspan="5" class="text-center">Belum ada peminjaman</td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+    <!-- TABEL -->
+    <div class="row mt-5">
+
+        <!-- Riwayat seluruh peminjaman -->
+        <div class="col-md-6">
+            <div class="p-2 mb-2" style="background:#2366CC; color:white; border-radius:4px;">
+                <strong>Riwayat seluruh peminjaman yang pernah dilakukan</strong>
             </div>
+
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Nama Alat</th>
+                        <th>Tanggal peminjaman</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($riwayat->num_rows > 0): $no=1; ?>
+                        <?php while($r = $riwayat->fetch_assoc()): ?>
+                            <tr>
+                                <td><?= $no++ ?></td>
+                                <td><?= htmlspecialchars($r['namaalat']) ?></td>
+                                <td><?= htmlspecialchars($r['tanggalpinjam']) ?></td>
+                                <td><?= htmlspecialchars($r['keterangan']) ?></td>
+                            </tr>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <tr><td colspan="4" class="text-center">Tidak ada data</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
+
+        <!-- Belum dikembalikan -->
+        <div class="col-md-6">
+            <div class="p-2 mb-2" style="background:#E00000; color:white; border-radius:4px;">
+                <strong>Peminjaman yang belum dikembalikan</strong>
+            </div>
+
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Nama Alat</th>
+                        <th>Tanggal peminjaman</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($belumKembaliList->num_rows > 0): $no=1; ?>
+                        <?php while($b = $belumKembaliList->fetch_assoc()): ?>
+                            <tr>
+                                <td><?= $no++ ?></td>
+                                <td><?= htmlspecialchars($b['namaalat']) ?></td>
+                                <td><?= htmlspecialchars($b['tanggalpinjam']) ?></td>
+                                <td>belumkembali</td>
+                            </tr>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <tr><td colspan="4" class="text-center">Tidak ada data</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
     </div>
+
 </div>
 
 <?php include PAGES_PATH . 'peminjam/footer.php'; ?>

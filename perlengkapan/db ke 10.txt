@@ -121,228 +121,135 @@
 +--------------------------------------------------------------------+
 
 
--- DROP DB dulu jika ingin rebuild (opsional)
-DROP DATABASE IF EXISTS peminjamanalatrpl;
-CREATE DATABASE peminjamanalatrpl CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE peminjamanalatrpl;
+mysql> show tables;
++-----------------------------+
+| Tables_in_peminjamanalatrpl |
++-----------------------------+
+| alat                        |
+| asal                        |
+| detilpeminjaman             |
+| jabatan                     |
+| kategori                    |
+| komentar                    |
+| merk                        |
+| peminjam                    |
+| peminjaman                  |
+| posisi                      |
+| user                        |
++-----------------------------+
 
--- tabel jabatan
-CREATE TABLE jabatan (
-  idjabatan INT NOT NULL AUTO_INCREMENT,
-  namajabatan VARCHAR(100) NOT NULL,
-  PRIMARY KEY (idjabatan)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+mysql> desc asal;
++----------+--------------+------+-----+---------+----------------+
+| Field    | Type         | Null | Key | Default | Extra          |
++----------+--------------+------+-----+---------+----------------+
+| idasal   | int          | NO   | PRI | NULL    | auto_increment |
+| namaasal | varchar(100) | NO   |     | NULL    |                |
++----------+--------------+------+-----+---------+----------------+
 
-INSERT INTO jabatan (namajabatan) VALUES
-('Siswa'),('Guru'),('TU'),('Tamu'),('Admin'),('Petugas'),('Lainnya'),('Koordinator'),('Kepsek'),('Wali Kelas');
+mysql> desc jabatan;
++-------------+--------------+------+-----+---------+----------------+
+| Field       | Type         | Null | Key | Default | Extra          |
++-------------+--------------+------+-----+---------+----------------+
+| idjabatan   | int          | NO   | PRI | NULL    | auto_increment |
+| namajabatan | varchar(100) | NO   |     | NULL    |                |
++-------------+--------------+------+-----+---------+----------------+
 
--- tabel user
-CREATE TABLE user (
-  iduser INT NOT NULL AUTO_INCREMENT,
-  idjabatan INT DEFAULT NULL,
-  namauser VARCHAR(100) NOT NULL,
-  username VARCHAR(50) NOT NULL UNIQUE,
-  email VARCHAR(100) DEFAULT NULL,
-  password VARCHAR(255) NOT NULL,
-  foto VARCHAR(255) DEFAULT NULL,
-  tanggalbuat DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  role ENUM('admin','petugas') NOT NULL DEFAULT 'admin',
-  PRIMARY KEY (iduser),
-  FOREIGN KEY (idjabatan) REFERENCES jabatan(idjabatan) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+mysql> desc merk;
++----------+--------------+------+-----+---------+----------------+
+| Field    | Type         | Null | Key | Default | Extra          |
++----------+--------------+------+-----+---------+----------------+
+| idmerk   | int          | NO   | PRI | NULL    | auto_increment |
+| namamerk | varchar(100) | NO   |     | NULL    |                |
++----------+--------------+------+-----+---------+----------------+
 
--- *** NOTE: password masih plain-text '12345' — akan di-hash pakai PHP seeder selanjutnya ***
-INSERT INTO user (idjabatan, namauser, username, email, password, foto, role) VALUES
-(1,'Budi Santoso','budi','budi@example.com','12345','budi.jpg','admin'),
-(2,'Siti Rahma','siti','siti@example.com','12345','siti.jpg','admin'),
-(3,'Agus Prasetyo','agus','agus@example.com','12345','agus.jpg','admin'),
-(4,'Dewi Lestari','dewi','dewi@example.com','12345','dewi.jpg','admin'),
-(5,'Rudi Hartono','rudi','rudi@example.com','12345','rudi.jpg','petugas'),
-(6,'Nina Amelia','nina','nina@example.com','12345','nina.jpg','petugas'),
-(7,'Dian Putra','dian','dian@example.com','12345','dian.jpg','petugas'),
-(8,'Fajar Hidayat','fajar','fajar@example.com','12345','fajar.jpg','petugas'),
-(9,'Mega Sari','mega','mega@example.com','12345','mega.jpg','admin'),
-(10,'Andi Kurniawan','andi','andi@example.com','12345','andi.jpg','admin');
+mysql> desc posisi;
++------------+--------------+------+-----+---------+----------------+
+| Field      | Type         | Null | Key | Default | Extra          |
++------------+--------------+------+-----+---------+----------------+
+| idposisi   | int          | NO   | PRI | NULL    | auto_increment |
+| namaposisi | varchar(100) | NO   |     | NULL    |                |
++------------+--------------+------+-----+---------+----------------+
 
--- tabel asal
-CREATE TABLE asal (
-  idasal INT NOT NULL AUTO_INCREMENT,
-  namaasal VARCHAR(100) NOT NULL,
-  PRIMARY KEY (idasal)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+mysql> desc kategori;
++--------------+--------------+------+-----+---------+----------------+
+| Field        | Type         | Null | Key | Default | Extra          |
++--------------+--------------+------+-----+---------+----------------+
+| idkategori   | int          | NO   | PRI | NULL    | auto_increment |
+| namakategori | varchar(100) | NO   |     | NULL    |                |
++--------------+--------------+------+-----+---------+----------------+
 
-INSERT INTO asal (namaasal) VALUES
-('Rekayasa Perangkat Lunak'),('Teknik Komputer dan Jaringan'),('Multimedia'),
-('Desain Komunikasi Visual'),('Teknik Otomotif'),('Teknik Elektronika Industri'),
-('Teknik Pendingin dan Tata Udara'),('Teknik Mesin'),('Administrasi Perkantoran'),('Akuntansi dan Keuangan Lembaga');
+mysql> desc user;
++-------------+-------------------------+------+-----+-------------------+-------------------+
+| Field       | Type                    | Null | Key | Default           | Extra             |
++-------------+-------------------------+------+-----+-------------------+-------------------+
+| iduser      | int                     | NO   | PRI | NULL              | auto_increment    |
+| idjabatan   | int                     | YES  | MUL | NULL              |                   |
+| namauser    | varchar(100)            | NO   |     | NULL              |                   |
+| username    | varchar(50)             | NO   | UNI | NULL              |                   |
+| email       | varchar(100)            | YES  |     | NULL              |                   |
+| password    | varchar(255)            | NO   |     | NULL              |                   |
+| foto        | varchar(255)            | YES  |     | NULL              |                   |
+| tanggalbuat | datetime                | NO   |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| role        | enum('admin','petugas') | NO   |     | admin             |                   |
++-------------+-------------------------+------+-----+-------------------+-------------------+
 
--- tabel peminjam
-CREATE TABLE peminjam (
-  idpeminjam INT NOT NULL AUTO_INCREMENT,
-  idasal INT DEFAULT NULL,
-  namapeminjam VARCHAR(100) NOT NULL,
-  username VARCHAR(50) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
-  foto VARCHAR(255) DEFAULT NULL,
-  tanggalbuat DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (idpeminjam),
-  FOREIGN KEY (idasal) REFERENCES asal(idasal) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+mysql> desc peminjam;
++--------------+---------------------------------------+------+-----+-------------------+-------------------+
+| Field        | Type                                  | Null | Key | Default           | Extra             |
++--------------+---------------------------------------+------+-----+-------------------+-------------------+
+| idpeminjam   | int                                   | NO   | PRI | NULL              | auto_increment    |
+| idasal       | int                                   | YES  | MUL | NULL              |                   |
+| namapeminjam | varchar(100)                          | NO   |     | NULL              |                   |
+| username     | varchar(50)                           | NO   | UNI | NULL              |                   |
+| password     | varchar(255)                          | NO   |     | NULL              |                   |
+| foto         | varchar(255)                          | YES  |     | NULL              |                   |
+| tanggalbuat  | datetime                              | NO   |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| status       | enum('disetujui','pending','ditolak') | NO   |     | pending           |                   |
++--------------+---------------------------------------+------+-----+-------------------+-------------------+
 
--- password plain-text '12345'
-INSERT INTO peminjam (idasal, namapeminjam, username, password, foto) VALUES
-(2,'Ahmadi Muslim','ahmadi','12345','ahmadi.jpg'),
-(3,'Shandra Dini','shandra','12345','shandra.jpg'),
-(4,'Shelsy Olivia','shelsy','12345','shelsy.jpg'),
-(1,'Sri Wahyunah','sri','12345','sri.jpg'),
-(5,'Rizka Aulia','rizka','12345','rizka.jpg'),
-(6,'Dewi Lestari','dewi','12345','dewi.jpg'),
-(7,'Fajar Hidayat','fajar','12345','fajar.jpg'),
-(8,'Mega Sari','mega','12345','mega.jpg'),
-(9,'Andi Kurniawan','andi','12345','andi.jpg'),
-(10,'Nina Amelia','nina','12345','nina.jpg');
+mysql> desc alat;
++------------------+--------------+------+-----+-------------------+-------------------+
+| Field            | Type         | Null | Key | Default           | Extra             |
++------------------+--------------+------+-----+-------------------+-------------------+
+| idalat           | int          | NO   | PRI | NULL              | auto_increment    |
+| idkategori       | int          | YES  | MUL | NULL              |                   |
+| idmerk           | int          | YES  | MUL | NULL              |                   |
+| namaalat         | varchar(100) | NO   |     | NULL              |                   |
+| kondisi          | varchar(50)  | YES  |     | NULL              |                   |
+| idposisi         | int          | YES  | MUL | NULL              |                   |
+| tanggalpembelian | date         | YES  |     | NULL              |                   |
+| foto             | varchar(255) | YES  |     | NULL              |                   |
+| deskripsi        | text         | YES  |     | NULL              |                   |
+| tanggalbuat      | datetime     | NO   |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++------------------+--------------+------+-----+-------------------+-------------------+
 
--- tabel kategori
-CREATE TABLE kategori (
-  idkategori INT NOT NULL AUTO_INCREMENT,
-  namakategori VARCHAR(100) NOT NULL,
-  PRIMARY KEY (idkategori)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+mysql> desc peminjaman;
++--------------+----------+------+-----+-------------------+-------------------+
+| Field        | Type     | Null | Key | Default           | Extra             |
++--------------+----------+------+-----+-------------------+-------------------+
+| idpeminjaman | int      | NO   | PRI | NULL              | auto_increment    |
+| idadmin      | int      | NO   | MUL | NULL              |                   |
+| idpeminjam   | int      | NO   | MUL | NULL              |                   |
+| tanggalbuat  | datetime | NO   |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++--------------+----------+------+-----+-------------------+-------------------+
 
-INSERT INTO kategori (namakategori) VALUES
-('Alat Tulis'),('Alat Elektronik'),('Alat Laboratorium'),('Alat Olahraga'),('Alat Musik'),
-('Alat Kebersihan'),('Alat Memasak'),('Alat Kantor'),('Alat Kesehatan'),('Alat Pertukangan');
+mysql> desc detilpeminjaman;
++---------------------+-------------------------------------+------+-----+----------------+----------------+
+| Field               | Type                                | Null | Key | Default        | Extra          |
++---------------------+-------------------------------------+------+-----+----------------+----------------+
+| iddetilpeminjaman   | int                                 | NO   | PRI | NULL           | auto_increment |
+| idpeminjaman        | int                                 | NO   | MUL | NULL           |                |
+| idalat              | int                                 | NO   | MUL | NULL           |                |
+| tanggalpinjam       | date                                | YES  |     | NULL           |                |
+| tanggalkembali      | date                                | YES  |     | NULL           |                |
+| tanggaldikembalikan | date                                | YES  |     | NULL           |                |
+| durasipeminjaman    | int                                 | YES  |     | 0              |                |
+| jumlahharitelat     | int                                 | YES  |     | 0              |                |
+| status              | enum('terlambat','tidakterlambat')  | YES  |     | tidakterlambat |                |
+| keterangan          | enum('sudahkembali','belumkembali') | YES  |     | belumkembali   |                |
+| denda               | decimal(10,2)                       | YES  |     | 0.00           |                |
+| fotopeminjaman      | varchar(255)                        | YES  |     | NULL           |                |
+| fotopengembalian    | varchar(255)                        | YES  |     | NULL           |                |
++---------------------+-------------------------------------+------+-----+----------------+----------------+
 
--- tabel merk
-CREATE TABLE merk (
-  idmerk INT NOT NULL AUTO_INCREMENT,
-  namamerk VARCHAR(100) NOT NULL,
-  PRIMARY KEY (idmerk)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO merk (namamerk) VALUES
-('Lenovo'),('Acer'),('Asus'),('HP'),('Epson'),('Canon'),('Samsung'),('Panasonic'),('Dell'),('LG');
-
--- tabel posisi
-CREATE TABLE posisi (
-  idposisi INT NOT NULL AUTO_INCREMENT,
-  namaposisi VARCHAR(100) NOT NULL,
-  PRIMARY KEY (idposisi)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO posisi (namaposisi) VALUES
-('Lab RPL'),('Kantor Guru'),('Gudang'),('Ruang Multimedia'),('Ruang BK'),
-('Ruang Olahraga'),('Ruang Musik'),('Ruang Komputer'),('Ruang Administrasi'),('Laboratorium');
-
--- tabel alat
-CREATE TABLE alat (
-  idalat INT NOT NULL AUTO_INCREMENT,
-  idkategori INT DEFAULT NULL,
-  idmerk INT DEFAULT NULL,
-  namaalat VARCHAR(100) NOT NULL,
-  kondisi VARCHAR(50) DEFAULT NULL,
-  idposisi INT DEFAULT NULL,
-  tanggalpembelian DATE DEFAULT NULL,
-  foto VARCHAR(255) DEFAULT NULL,
-  deskripsi TEXT DEFAULT NULL,
-  tanggalbuat DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (idalat),
-  FOREIGN KEY (idkategori) REFERENCES kategori(idkategori) ON DELETE SET NULL ON UPDATE CASCADE,
-  FOREIGN KEY (idmerk) REFERENCES merk(idmerk) ON DELETE SET NULL ON UPDATE CASCADE,
-  FOREIGN KEY (idposisi) REFERENCES posisi(idposisi) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO alat (idkategori, idmerk, namaalat, kondisi, idposisi, tanggalpembelian, foto, deskripsi) VALUES
-(1,1,'Pensil', 'Baik', 1, '2025-10-01','pensil.jpg','Pensil warna hitam'),
-(2,2,'Laptop Lenovo', 'Baik', 2, '2025-10-02','laptop.jpg','Laptop Intel Core i5'),
-(3,3,'Tabung Reaksi', 'Baik', 3, '2025-10-03','tabung.jpg','Tabung reaksi kimia'),
-(4,4,'Bola Basket', 'Baik', 4, '2025-10-04','bola.jpg','Bola basket ukuran resmi'),
-(5,5,'Gitar Akustik', 'Baik', 5, '2025-10-05','gitar.jpg','Gitar akustik standar'),
-(6,6,'Sapu', 'Baik', 6, '2025-10-06','sapu.jpg','Sapu plastik'),
-(7,7,'Kompor Gas', 'Baik', 7, '2025-10-07','kompor.jpg','Kompor gas 2 tungku'),
-(8,8,'Kursi Kantor', 'Baik', 8, '2025-10-08','kursi.jpg','Kursi ergonomis'),
-(9,9,'Termometer', 'Baik', 9, '2025-10-09','termometer.jpg','Termometer digital'),
-(10,10,'Palu', 'Baik', 10, '2025-10-10','palu.jpg','Palu kayu');
-
--- tabel peminjaman
-CREATE TABLE peminjaman (
-  idpeminjaman INT NOT NULL AUTO_INCREMENT,
-  idadmin INT NOT NULL,
-  idpeminjam INT NOT NULL,
-  foto VARCHAR(255) DEFAULT NULL,
-  tanggalbuat DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (idpeminjaman),
-  FOREIGN KEY (idadmin) REFERENCES user(iduser) ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY (idpeminjam) REFERENCES peminjam(idpeminjam) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO peminjaman (idadmin, idpeminjam, foto) VALUES
-(1,1,'peminjaman1.jpg'),
-(2,2,'peminjaman2.jpg'),
-(3,3,'peminjaman3.jpg'),
-(4,4,'peminjaman4.jpg'),
-(5,5,'peminjaman5.jpg'),
-(6,6,'peminjaman6.jpg'),
-(7,7,'peminjaman7.jpg'),
-(8,8,'peminjaman8.jpg'),
-(9,9,'peminjaman9.jpg'),
-(10,10,'peminjaman10.jpg');
-
--- tabel detilpeminjaman
-CREATE TABLE detilpeminjaman (
-  iddetilpeminjaman INT NOT NULL AUTO_INCREMENT,
-  idpeminjaman INT NOT NULL,
-  idalat INT NOT NULL,
-  tanggalpinjam DATE DEFAULT NULL,
-  tanggalkembali DATE DEFAULT NULL,
-  tanggaldikembalikan DATE DEFAULT NULL,
-  durasipeminjaman INT DEFAULT 0,
-  jumlahharitelat INT DEFAULT 0,
-  status ENUM('terlambat','tidakterlambat') DEFAULT 'tidakterlambat',
-  keterangan ENUM('sudahkembali','belumkembali') DEFAULT 'belumkembali',
-  denda DECIMAL(10,2) DEFAULT 0.00,
-  PRIMARY KEY (iddetilpeminjaman),
-  FOREIGN KEY (idpeminjaman) REFERENCES peminjaman(idpeminjaman) ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY (idalat) REFERENCES alat(idalat) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO detilpeminjaman (idpeminjaman, idalat, tanggalpinjam, tanggalkembali, tanggaldikembalikan, durasipeminjaman, status, keterangan, denda) VALUES
-(1,1,'2025-11-01','2025-11-05','2025-11-05',5,'tidakterlambat','sudahkembali',0),
-(2,2,'2025-11-02','2025-11-06','2025-11-06',5,'tidakterlambat','sudahkembali',0),
-(3,3,'2025-11-03','2025-11-07','2025-11-07',5,'tidakterlambat','sudahkembali',0),
-(4,4,'2025-11-04','2025-11-08','2025-11-09',5,'terlambat','sudahkembali',10000),
-(5,5,'2025-11-05','2025-11-09',NULL,5,'tidakterlambat','belumkembali',0),
-(6,6,'2025-11-06','2025-11-10',NULL,5,'tidakterlambat','belumkembali',0),
-(7,7,'2025-11-07','2025-11-11','2025-11-11',5,'tidakterlambat','sudahkembali',0),
-(8,8,'2025-11-08','2025-11-12',NULL,5,'tidakterlambat','belumkembali',0),
-(9,9,'2025-11-09','2025-11-13','2025-11-13',5,'tidakterlambat','sudahkembali',0),
-(10,10,'2025-11-10','2025-11-14',NULL,5,'tidakterlambat','belumkembali',0);
-
--- tabel komentar
-CREATE TABLE komentar (
-  idkomentar INT NOT NULL AUTO_INCREMENT,
-  idalat INT DEFAULT NULL,
-  idparent INT DEFAULT NULL,
-  namakomentar VARCHAR(100) NOT NULL,
-  email VARCHAR(100) DEFAULT NULL,
-  isikomentar TEXT NOT NULL,
-  tanggalbuat DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  status ENUM('tampil','sembunyi') DEFAULT 'tampil',
-  PRIMARY KEY (idkomentar),
-  FOREIGN KEY (idalat) REFERENCES alat(idalat) ON DELETE SET NULL ON UPDATE CASCADE,
-  FOREIGN KEY (idparent) REFERENCES komentar(idkomentar) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO komentar (idalat, idparent, namakomentar, email, isikomentar) VALUES
-(1,NULL,'Ahmadi','ahmadi@example.com','Alat ini bagus'),
-(2,NULL,'Shandra','shandra@example.com','Laptop cepat'),
-(3,NULL,'Shelsy','shelsy@example.com','Tabung reaksi aman'),
-(4,NULL,'Sri','sri@example.com','Bola basket oke'),
-(5,NULL,'Rizka','rizka@example.com','Gitar bagus'),
-(6,NULL,'Dewi','dewi@example.com','Sapu bersih'),
-(7,NULL,'Fajar','fajar@example.com','Kompor berfungsi'),
-(8,NULL,'Mega','mega@example.com','Kursi nyaman'),
-(9,NULL,'Andi','andi@example.com','Termometer akurat'),
-(10,NULL,'Nina','nina@example.com','Palu mantap');
-
-
+mysql>

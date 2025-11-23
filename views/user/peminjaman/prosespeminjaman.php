@@ -7,38 +7,64 @@ require_once __DIR__ . '/../../../includes/fungsiupload.php';
 $db = $koneksi;
 $aksi = $_POST['aksi'] ?? $_GET['aksi'] ?? '';
 
+
 //
 // ================= TAMBAH PEMINJAMAN =================
 if ($aksi === 'tambah') {
-    $idadmin = $_SESSION['iduser']; // admin/petugas
-    $idpeminjam = $_POST['idpeminjam'];
 
-    // Upload foto dokumen
-    $foto = null;
-    if (isset($_FILES['foto']) && $_FILES['foto']['error'] !== 4) {
-        $upload = upload_gambar($_FILES['foto'], 'peminjaman');
-        if ($upload['status'] === 'success') $foto = $upload['filename'];
-    }
+    $idadmin     = $_SESSION['iduser']; 
+    $idpeminjam  = $_POST['idpeminjam'];
 
-    // Insert peminjaman
-    $stmt = $db->prepare("INSERT INTO peminjaman (idadmin, idpeminjam, foto) VALUES (?, ?, ?)");
-    $stmt->bind_param("iis", $idadmin, $idpeminjam, $foto);
+    // INSERT peminjaman
+    $stmt = $db->prepare("INSERT INTO peminjaman (idadmin, idpeminjam) VALUES (?, ?)");
+    $stmt->bind_param("ii", $idadmin, $idpeminjam);
     $stmt->execute();
 
     $idpeminjaman = $stmt->insert_id;
 
-    // Insert detil peminjaman
+    //
+    // ================= DETIL PEMINJAMAN (DENGAN FOTO PER ALAT) =================
+    //
     if (!empty($_POST['idalat'])) {
-        foreach ($_POST['idalat'] as $i => $idalat) {
-            $tanggalpinjam = $_POST['tanggalpinjam'][$i] ?? date('Y-m-d');
-            $tanggalkembali = $_POST['tanggalkembali'][$i] ?? date('Y-m-d', strtotime('+1 day'));
 
+        foreach ($_POST['idalat'] as $i => $idalat) {
+
+            $tanggalpinjam   = $_POST['tanggalpinjam'][$i]  ?? date('Y-m-d');
+            $tanggalkembali  = $_POST['tanggalkembali'][$i] ?? date('Y-m-d', strtotime('+1 day'));
+
+            // ===== Upload foto per alat =====
+            $fotoPinjam = null;
+            if (isset($_FILES['fotopeminjaman']['name'][$i]) && $_FILES['fotopeminjaman']['error'][$i] !== 4) {
+
+                // Build ulang structure file untuk fungsi upload
+                $file = [
+                    'name'     => $_FILES['fotopeminjaman']['name'][$i],
+                    'type'     => $_FILES['fotopeminjaman']['type'][$i],
+                    'tmp_name' => $_FILES['fotopeminjaman']['tmp_name'][$i],
+                    'error'    => $_FILES['fotopeminjaman']['error'][$i],
+                    'size'     => $_FILES['fotopeminjaman']['size'][$i],
+                ];
+
+                $upload = upload_gambar($file, 'peminjaman');
+                if ($upload['status'] === 'success') {
+                    $fotoPinjam = $upload['filename'];
+                }
+            }
+
+            // Insert detil
             $stmtDetil = $db->prepare("
                 INSERT INTO detilpeminjaman 
-                (idpeminjaman, idalat, tanggalpinjam, tanggalkembali, keterangan, status, denda)
-                VALUES (?, ?, ?, ?, 'belumkembali', 'tidakterlambat', 0)
+                (idpeminjaman, idalat, tanggalpinjam, tanggalkembali, fotopeminjaman, 
+                 keterangan, status, denda)
+                VALUES (?, ?, ?, ?, ?, 'belumkembali', 'tidakterlambat', 0)
             ");
-            $stmtDetil->bind_param("iiss", $idpeminjaman, $idalat, $tanggalpinjam, $tanggalkembali);
+            $stmtDetil->bind_param("iisss", 
+                $idpeminjaman, 
+                $idalat, 
+                $tanggalpinjam, 
+                $tanggalkembali, 
+                $fotoPinjam
+            );
             $stmtDetil->execute();
         }
     }
@@ -47,59 +73,91 @@ if ($aksi === 'tambah') {
     exit;
 }
 
+
 //
 // ================= EDIT PEMINJAMAN =================
 if ($aksi === 'edit') {
+
     $idpeminjaman = $_POST['idpeminjaman'];
-    $idpeminjam = $_POST['idpeminjam'];
+    $idpeminjam   = $_POST['idpeminjam'];
 
-    // Upload foto baru
-    $fotoBaru = null;
-    if (isset($_FILES['foto']) && $_FILES['foto']['error'] !== 4) {
-        $upload = upload_gambar($_FILES['foto'], 'peminjaman');
-        if ($upload['status'] === 'success') {
-            $fotoBaru = $upload['filename'];
-            $fotoLama = $_POST['fotolama'] ?? '';
-            if ($fotoLama && file_exists(__DIR__ . "/../../../uploads/peminjaman/$fotoLama")) {
-                unlink(__DIR__ . "/../../../uploads/peminjaman/$fotoLama");
-            }
-        }
-    }
-    $fotoFinal = $fotoBaru ?? $_POST['fotolama'];
-
-    // Update peminjaman
-    $stmt = $db->prepare("UPDATE peminjaman SET idpeminjam=?, foto=? WHERE idpeminjaman=?");
-    $stmt->bind_param("isi", $idpeminjam, $fotoFinal, $idpeminjaman);
+    // UPDATE header peminjaman
+    $stmt = $db->prepare("UPDATE peminjaman SET idpeminjam=? WHERE idpeminjaman=?");
+    $stmt->bind_param("ii", $idpeminjam, $idpeminjaman);
     $stmt->execute();
 
-    // ===== Update / Insert detil peminjaman =====
-    $idalatArr = $_POST['idalat'] ?? [];
-    $tanggalpinjamArr = $_POST['tanggalpinjam'] ?? [];
+    // ================= UPDATE / INSERT DETIL (DENGAN FOTO PER ALAT) =================
+    $idalatArr         = $_POST['idalat'] ?? [];
+    $tanggalpinjamArr  = $_POST['tanggalpinjam'] ?? [];
     $tanggalkembaliArr = $_POST['tanggalkembali'] ?? [];
-    $iddetilArr = $_POST['iddetilpeminjaman'] ?? [];
+    $iddetilArr        = $_POST['iddetilpeminjaman'] ?? [];
+    $fotoLamaArr       = $_POST['fotolama'] ?? [];
 
     foreach ($idalatArr as $i => $idalat) {
-        $tanggalpinjam = $tanggalpinjamArr[$i] ?? date('Y-m-d');
-        $tanggalkembali = $tanggalkembaliArr[$i] ?? date('Y-m-d', strtotime('+1 day'));
-        $iddetil = $iddetilArr[$i] ?? null;
+
+        $tanggalpinjam   = $tanggalpinjamArr[$i]  ?? date('Y-m-d');
+        $tanggalkembali  = $tanggalkembaliArr[$i] ?? date('Y-m-d', strtotime('+1 day'));
+        $iddetil         = $iddetilArr[$i]        ?? null;
+
+        // ==== Foto baru? ====
+        $fotoBaru = null;
+        if (isset($_FILES['fotopeminjaman']['name'][$i]) && $_FILES['fotopeminjaman']['error'][$i] !== 4) {
+
+            $file = [
+                'name'     => $_FILES['fotopeminjaman']['name'][$i],
+                'type'     => $_FILES['fotopeminjaman']['type'][$i],
+                'tmp_name' => $_FILES['fotopeminjaman']['tmp_name'][$i],
+                'error'    => $_FILES['fotopeminjaman']['error'][$i],
+                'size'     => $_FILES['fotopeminjaman']['size'][$i],
+            ];
+
+            $upload = upload_gambar($file, 'peminjaman');
+            if ($upload['status'] === 'success') {
+                $fotoBaru = $upload['filename'];
+
+                // Delete foto lama
+                if (!empty($fotoLamaArr[$i])) {
+                    $path = __DIR__ . "/../../../uploads/peminjaman/" . $fotoLamaArr[$i];
+                    if (file_exists($path)) unlink($path);
+                }
+            }
+        }
+
+        $fotoFinal = $fotoBaru ?: ($fotoLamaArr[$i] ?? null);
 
         if ($iddetil) {
-            // Update detil lama
+
+            // UPDATE detil lama
             $stmtDetil = $db->prepare("
                 UPDATE detilpeminjaman 
-                SET idalat=?, tanggalpinjam=?, tanggalkembali=? 
+                SET idalat=?, tanggalpinjam=?, tanggalkembali=?, fotopeminjaman=?
                 WHERE iddetilpeminjaman=?
             ");
-            $stmtDetil->bind_param("issi", $idalat, $tanggalpinjam, $tanggalkembali, $iddetil);
+            $stmtDetil->bind_param("isssi", 
+                $idalat, 
+                $tanggalpinjam, 
+                $tanggalkembali,
+                $fotoFinal,
+                $iddetil
+            );
             $stmtDetil->execute();
+
         } else {
-            // Insert alat baru
+
+            // INSERT detil baru
             $stmtDetil = $db->prepare("
-                INSERT INTO detilpeminjaman
-                (idpeminjaman, idalat, tanggalpinjam, tanggalkembali, keterangan, status, denda)
-                VALUES (?, ?, ?, ?, 'belumkembali', 'tidakterlambat', 0)
+                INSERT INTO detilpeminjaman 
+                (idpeminjaman, idalat, tanggalpinjam, tanggalkembali, fotopeminjaman,
+                 keterangan, status, denda)
+                VALUES (?, ?, ?, ?, ?, 'belumkembali', 'tidakterlambat', 0)
             ");
-            $stmtDetil->bind_param("iiss", $idpeminjaman, $idalat, $tanggalpinjam, $tanggalkembali);
+            $stmtDetil->bind_param("iisss", 
+                $idpeminjaman, 
+                $idalat, 
+                $tanggalpinjam, 
+                $tanggalkembali, 
+                $fotoFinal
+            );
             $stmtDetil->execute();
         }
     }
@@ -108,21 +166,25 @@ if ($aksi === 'edit') {
     exit;
 }
 
+
 //
 // ================= HAPUS PEMINJAMAN =================
 if ($aksi === 'hapus') {
     $id = $_GET['id'];
 
-    // Hapus foto
-    $foto = $db->query("SELECT foto FROM peminjaman WHERE idpeminjaman=$id")->fetch_assoc()['foto'];
-    if ($foto && file_exists(__DIR__ . "/../../../uploads/peminjaman/$foto")) {
-        unlink(__DIR__ . "/../../../uploads/peminjaman/$foto");
+    // Ambil semua foto detil → hapus file
+    $q = $db->query("SELECT fotopeminjaman FROM detilpeminjaman WHERE idpeminjaman=$id");
+    while ($row = $q->fetch_assoc()) {
+        if ($row['fotopeminjaman']) {
+            $path = __DIR__ . "/../../../uploads/peminjaman/" . $row['fotopeminjaman'];
+            if (file_exists($path)) unlink($path);
+        }
     }
 
-    // Hapus detil peminjaman
+    // Hapus detil
     $db->query("DELETE FROM detilpeminjaman WHERE idpeminjaman=$id");
 
-    // Hapus peminjaman
+    // Hapus header peminjaman
     $db->query("DELETE FROM peminjaman WHERE idpeminjaman=$id");
 
     header("Location: ../../../dashboard.php?hal=peminjaman/daftarpeminjaman&msg=sukses_hapus");
